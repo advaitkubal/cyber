@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Security Center - SecureVault{% endblock %}
+
+{% block content %}
+<div class="security-page-container">
+  <div class="page-header">
+    <div class="header-badge">CYBERSECURITY ARCHITECTURE</div>
+    <h1 class="page-title">Security Center & Threat Model</h1>
+    <p class="page-subtitle">Detailed breakdown of cryptographic controls, defensive headers, and session boundaries implemented in SecureVault.</p>
+  </div>
+
+  <!-- Live Security Status Chips -->
+  <div class="status-grid">
+    <div class="status-card">
+      <div class="status-label">Active Session Idle Timer</div>
+      <div class="status-value text-accent">{{ status.session_minutes_left }} min remaining</div>
+      <div class="status-detail">Max idle timeout: 15 minutes</div>
+    </div>
+    <div class="status-card">
+      <div class="status-label">Session Cookie Security</div>
+      <div class="status-value text-success">HttpOnly &bull; SameSite={{ status.cookie_samesite }}</div>
+      <div class="status-detail">Secure flag: {{ 'Enabled (HTTPS)' if status.cookie_secure else 'Disabled (Localhost Dev)' }}</div>
+    </div>
+    <div class="status-card">
+      <div class="status-label">Content Security Policy</div>
+      <div class="status-value text-success">Strict ('self' only)</div>
+      <div class="status-detail">Zero inline scripts or styles permitted</div>
+    </div>
+    <div class="status-card">
+      <div class="status-label">Encryption Engine</div>
+      <div class="status-value text-accent">AES-256-GCM</div>
+      <div class="status-detail">Per-user HKDF key + 12-byte random nonces</div>
+    </div>
+  </div>
+
+  <!-- Five Core Mechanisms Section -->
+  <div class="mechanisms-section">
+    <h2 class="section-title">Core Defensive Mechanisms</h2>
+
+    <div class="mechanism-card">
+      <div class="mechanism-header">
+        <span class="mech-number">01</span>
+        <div>
+          <h3 class="mech-title">AES-256-GCM Authenticated Encryption at Rest</h3>
+          <span class="badge-tag">app/crypto.py</span>
+        </div>
+      </div>
+      <p class="mech-desc">
+        Every sensitive database field (note titles, note bodies, account usernames, passwords, URLs, and remarks) is encrypted using AES-256 in Galois/Counter Mode (GCM). A 32-byte master key is stored exclusively in <code>.env</code>, and a dedicated 256-bit encryption key is derived for each user via HKDF-SHA256 with an individual 16-byte random salt.
+      </p>
+      <div class="mech-attack">
+        <strong>Attack Prevented:</strong> Database Exfiltration and Ciphertext Tampering. Even if an attacker dumps the SQLite database file, all data remains undecipherable blobs. Any byte manipulation triggers an <code>InvalidTag</code> exception, immediately aborting decryption.
+      </div>
+    </div>
+
+    <div class="mechanism-card">
+      <div class="mechanism-header">
+        <span class="mech-number">02</span>
+        <div>
+          <h3 class="mech-title">Salted Password Hashing & Timing Attack Mitigation</h3>
+          <span class="badge-tag">app/auth.py</span>
+        </div>
+      </div>
+      <p class="mech-desc">
+        User passwords are never stored in plaintext. They are hashed using <code>scrypt</code> (with fallback to PBKDF2-HMAC-SHA256 with 600,000 iterations). Non-existent usernames execute a dummy hash comparison to equalize execution time, and accounts automatically lock for 5 minutes after 5 consecutive failed attempts.
+      </p>
+      <div class="mech-attack">
+        <strong>Attack Prevented:</strong> Offline Credential Cracking, User Enumeration, and Online Brute-Force Attacks. An attacker cannot discover whether a username exists through response timing, and cannot guess passwords via automated dictionary tools.
+      </div>
+    </div>
+
+    <div class="mechanism-card">
+      <div class="mechanism-header">
+        <span class="mech-number">03</span>
+        <div>
+          <h3 class="mech-title">Tiered IP-Based Rate Limiting</h3>
+          <span class="badge-tag">app/security.py</span>
+        </div>
+      </div>
+      <p class="mech-desc">
+        Endpoints are guarded by Flask-Limiter keyed by remote IP address. Limits strictly throttle abusive activity: <code>POST /login</code> allows 5 attempts/min, <code>POST /register</code> allows 5/hour, credential revelation allows 30/min, and general routes allow 200/hour. Exceeding limits returns HTTP 429 and logs an audit event.
+      </p>
+      <div class="mech-attack">
+        <strong>Attack Prevented:</strong> Denial of Service (DoS), Automated Credential Stuffing, and Bulk Data Scraping. Limits slow down automated scripts to an unviable frequency.
+      </div>
+    </div>
+
+    <div class="mechanism-card">
+      <div class="mechanism-header">
+        <span class="mech-number">04</span>
+        <div>
+          <h3 class="mech-title">SQL Injection & Cross-Site Scripting (XSS) Defenses</h3>
+          <span class="badge-tag">app/db.py &amp; app/security.py</span>
+        </div>
+      </div>
+      <p class="mech-desc">
+        100% of SQLite database queries use parameterized SQL statements with <code>?</code> placeholders, completely avoiding string concatenation or formatting. The frontend renders dynamic text exclusively through <code>textContent</code> DOM properties with Jinja2 autoescaping, reinforced by strict Content-Security-Policy, <code>X-Content-Type-Options: nosniff</code>, and <code>X-Frame-Options: DENY</code>.
+      </p>
+      <div class="mech-attack">
+        <strong>Attack Prevented:</strong> SQL Injection (SQLi), Stored/Reflected Cross-Site Scripting (XSS), and Clickjacking. Attack payloads like <code>' OR 1=1--</code> or <code>&lt;script&gt;</code> are treated strictly as inert literals.
+      </div>
+    </div>
+
+    <div class="mechanism-card">
+      <div class="mechanism-header">
+        <span class="mech-number">05</span>
+        <div>
+          <h3 class="mech-title">Hardened Session Management & CSRF Defense</h3>
+          <span class="badge-tag">app/security.py</span>
+        </div>
+      </div>
+      <p class="mech-desc">
+        Sessions use cryptographically signed HTTP cookies with <code>HttpOnly</code> and <code>SameSite=Lax</code>. A 15-minute sliding idle timeout is enforced both server-side and client-side. Session identifiers are refreshed on login to eliminate session fixation, and all state-changing requests require a high-entropy per-session CSRF token validated with constant-time HMAC digest comparison.
+      </p>
+      <div class="mech-attack">
+        <strong>Attack Prevented:</strong> Cross-Site Request Forgery (CSRF), Session Fixation, Session Hijacking via Script Access, and Stale Unattended Browser Reuse.
+      </div>
+    </div>
+  </div>
+
+  <!-- Bonus Controls Section -->
+  <div class="mechanisms-section">
+    <h2 class="section-title">Additional Security Safeguards</h2>
+    <div class="bonus-grid">
+      <div class="bonus-card">
+        <h4>Insecure Direct Object Reference (IDOR) Protection</h4>
+        <p>Every note and credential query enforces <code>AND user_id = ?</code>. Accessing another user's record returns HTTP 404 rather than 403, preventing object ID enumeration.</p>
+      </div>
+      <div class="bonus-card">
+        <h4>Tamper-Resistant Security Audit Logging</h4>
+        <p>Authentication successes, failures, account lockouts, rate limit trips, and data modifications are logged to an append-only audit trail with UTC timestamps and client IPs without logging secrets.</p>
+      </div>
+      <div class="bonus-card">
+        <h4>Safe Generic Error Responses</h4>
+        <p>Custom handlers catch HTTP 400, 401, 403, 404, 405, 413, 429, and 500 errors to return sanitized messages. Werkzeug stack traces and internal exceptions are suppressed entirely.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

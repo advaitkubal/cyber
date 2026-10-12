@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Register - SecureVault{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-icon">🛡️</div>
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-subtitle">Initialize your personal encrypted vault</p>
+    </div>
+
+    {% if error %}
+      <div class="alert alert-error" role="alert">
+        <span class="alert-icon">⚠️</span>
+        <span class="alert-text">{{ error }}</span>
+      </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form" id="register-form" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="form-control"
+            value="{{ username or '' }}"
+            required
+            autocomplete="username"
+            autofocus
+            placeholder="3-30 letters, numbers, or underscores"
+          >
+        </div>
+        <small class="form-hint">Allowed: alphanumeric characters and underscores.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Master Password</label>
+        <div class="input-wrapper password-input-wrapper">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-control"
+            required
+            autocomplete="new-password"
+            placeholder="Minimum 10 complex characters"
+          >
+          <button type="button" class="btn-toggle-password" id="toggle-password" aria-label="Toggle password visibility">
+            <span class="eye-icon">👁️</span>
+          </button>
+        </div>
+
+        <!-- Live Password Strength Meter -->
+        <div class="strength-meter-container">
+          <div class="strength-bar-track">
+            <div class="strength-bar-fill" id="strength-bar"></div>
+          </div>
+          <div class="strength-text" id="strength-text">Password strength: None</div>
+        </div>
+
+        <!-- Password Complexity Checklist -->
+        <ul class="checklist" id="password-checklist">
+          <li class="check-item" id="check-length"><span class="check-icon">○</span> Minimum 10 characters (max 128)</li>
+          <li class="check-item" id="check-upper"><span class="check-icon">○</span> At least one uppercase letter (A-Z)</li>
+          <li class="check-item" id="check-lower"><span class="check-icon">○</span> At least one lowercase letter (a-z)</li>
+          <li class="check-item" id="check-digit"><span class="check-icon">○</span> At least one numeric digit (0-9)</li>
+          <li class="check-item" id="check-symbol"><span class="check-icon">○</span> At least one special symbol (!@#$%^&*...)</li>
+        </ul>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" id="btn-submit-register">Create Secure Account</button>
+    </form>
+
+    <div class="auth-footer">
+      <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign In</a></p>
+    </div>
+
+    <div class="security-callout">
+      <small>🔒 Your password is never stored in plaintext. A unique 16-byte random salt and master encryption key are generated upon registration.</small>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

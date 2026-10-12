@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SecureVault{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+  <!-- Sidebar Navigation Tabs -->
+  <aside class="sidebar">
+    <div class="sidebar-user">
+      <div class="avatar-icon">👤</div>
+      <div class="user-meta">
+        <span class="user-name">{{ username }}</span>
+        <span class="user-role">Vault Master</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" role="tablist">
+      <button class="nav-tab active" id="tab-btn-notes" role="tab" aria-selected="true" data-tab="tab-notes">
+        <span class="tab-icon">📝</span>
+        <span>Secure Notes</span>
+      </button>
+      <button class="nav-tab" id="tab-btn-credentials" role="tab" aria-selected="false" data-tab="tab-credentials">
+        <span class="tab-icon">🔑</span>
+        <span>Credentials</span>
+      </button>
+      <button class="nav-tab" id="tab-btn-generator" role="tab" aria-selected="false" data-tab="tab-generator">
+        <span class="tab-icon">⚙️</span>
+        <span>Password Generator</span>
+      </button>
+      <button class="nav-tab" id="tab-btn-audit" role="tab" aria-selected="false" data-tab="tab-audit">
+        <span class="tab-icon">📜</span>
+        <span>Activity Log</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-info-card">
+      <div class="info-header">🔒 Encryption Status</div>
+      <p class="info-text">Active: AES-256-GCM</p>
+      <p class="info-sub">All records decrypted dynamically in browser session.</p>
+    </div>
+  </aside>
+
+  <!-- Main Workspace Area -->
+  <section class="workspace">
+    <!-- ================================================================= -->
+    <!-- TAB 1: SECURE NOTES -->
+    <!-- ================================================================= -->
+    <div class="tab-content active" id="tab-notes" role="tabpanel">
+      <div class="workspace-header">
+        <div>
+          <h2 class="workspace-title">Encrypted Notes</h2>
+          <p class="workspace-subtitle">AES-256-GCM encrypted notes stored safely at rest</p>
+        </div>
+        <div class="workspace-actions">
+          <input type="text" id="note-search-input" class="search-input" placeholder="Search decrypted titles...">
+          <button type="button" class="btn btn-primary" id="btn-open-create-note">
+            <span>+</span> New Note
+          </button>
+        </div>
+      </div>
+
+      <!-- Notes Grid / List Container -->
+      <div id="notes-container" class="notes-grid">
+        <div class="loading-state" id="notes-loading">Loading encrypted notes...</div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: CREDENTIALS -->
+    <!-- ================================================================= -->
+    <div class="tab-content" id="tab-credentials" role="tabpanel">
+      <div class="workspace-header">
+        <div>
+          <h2 class="workspace-title">Password Vault</h2>
+          <p class="workspace-subtitle">Stored credentials with masked passwords and time-limited reveal</p>
+        </div>
+        <div class="workspace-actions">
+          <input type="text" id="cred-search-input" class="search-input" placeholder="Search site or username...">
+          <button type="button" class="btn btn-primary" id="btn-open-create-cred">
+            <span>+</span> Add Credential
+          </button>
+        </div>
+      </div>
+
+      <!-- Credentials Table Container -->
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table" id="credentials-table">
+            <thead>
+              <tr>
+                <th>Site / Service</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>URL</th>
+                <th>Remarks</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="credentials-tbody">
+              <tr>
+                <td colspan="6" class="text-center">Loading encrypted credentials...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: PASSWORD GENERATOR -->
+    <!-- ================================================================= -->
+    <div class="tab-content" id="tab-generator" role="tabpanel">
+      <div class="workspace-header">
+        <div>
+          <h2 class="workspace-title">Cryptographic Password Generator</h2>
+          <p class="workspace-subtitle">Powered by window.crypto.getRandomValues (CSPRNG)</p>
+        </div>
+      </div>
+
+      <div class="generator-card">
+        <div class="generator-output-group">
+          <input type="text" id="generated-password-display" class="form-control generated-input" readonly placeholder="Click Generate">
+          <button type="button" class="btn btn-secondary" id="btn-copy-generated">Copy</button>
+          <button type="button" class="btn btn-primary" id="btn-use-generated">Use in Credential Form</button>
+        </div>
+
+        <div class="generator-options">
+          <div class="option-row">
+            <div class="slider-label-group">
+              <label for="pwd-length-slider">Length: <strong id="pwd-length-val">20</strong> characters</label>
+            </div>
+            <input type="range" id="pwd-length-slider" min="12" max="64" value="20" class="range-slider">
+          </div>
+
+          <div class="checkbox-grid">
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-opt-uppercase" checked>
+              <span>Uppercase (A-Z)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-opt-lowercase" checked>
+              <span>Lowercase (a-z)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-opt-digits" checked>
+              <span>Digits (0-9)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-opt-symbols" checked>
+              <span>Symbols (!@#$%^&*...)</span>
+            </label>
+          </div>
+
+          <button type="button" class="btn btn-outline" id="btn-regenerate">Regenerate Password</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 4: ACTIVITY LOG -->
+    <!-- ================================================================= -->
+    <div class="tab-content" id="tab-audit" role="tabpanel">
+      <div class="workspace-header">
+        <div>
+          <h2 class="workspace-title">Security Activity Log</h2>
+          <p class="workspace-subtitle">Immutable audit trail of authentication and access events</p>
+        </div>
+        <button type="button" class="btn btn-outline" id="btn-refresh-audit">Refresh Log</button>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table" id="audit-table">
+            <thead>
+              <tr>
+                <th>Event Type</th>
+                <th>Client IP</th>
+                <th>Timestamp (UTC)</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr>
+                <td colspan="3" class="text-center">Loading audit events...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================================================================== -->
+<!-- MODAL: NOTE CREATE / EDIT -->
+<!-- ===================================================================== -->
+<div class="modal-backdrop hidden" id="modal-note" role="dialog" aria-modal="true" aria-labelledby="modal-note-title">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-note-title">Create Encrypted Note</h3>
+      <button type="button" class="modal-close" id="btn-close-note-modal" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="form-note" novalidate>
+      <input type="hidden" id="note-id-input" value="">
+      <div class="form-group">
+        <label for="note-title-input">Note Title</label>
+        <input type="text" id="note-title-input" class="form-control" maxlength="200" required placeholder="Enter note title">
+      </div>
+      <div class="form-group">
+        <label for="note-body-input">Note Content</label>
+        <textarea id="note-body-input" class="form-control" rows="8" maxlength="20000" placeholder="Confidential note content..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-note">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-save-note">Save Encrypted Note</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- MODAL: CREDENTIAL CREATE / EDIT -->
+<!-- ===================================================================== -->
+<div class="modal-backdrop hidden" id="modal-cred" role="dialog" aria-modal="true" aria-labelledby="modal-cred-title">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-cred-title">Add Credential</h3>
+      <button type="button" class="modal-close" id="btn-close-cred-modal" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="form-cred" novalidate>
+      <input type="hidden" id="cred-id-input" value="">
+      <div class="form-group">
+        <label for="cred-site-input">Site / Service</label>
+        <input type="text" id="cred-site-input" class="form-control" maxlength="200" required placeholder="e.g. GitHub, AWS, Google">
+      </div>
+      <div class="form-group">
+        <label for="cred-username-input">Account Username / Email</label>
+        <input type="text" id="cred-username-input" class="form-control" maxlength="200" required placeholder="e.g. user@example.com">
+      </div>
+      <div class="form-group">
+        <label for="cred-password-input">Account Password</label>
+        <input type="text" id="cred-password-input" class="form-control" maxlength="500" required placeholder="Enter secret password">
+        <small class="form-hint" id="cred-password-hint">Encrypted using AES-256-GCM before saving.</small>
+      </div>
+      <div class="form-group">
+        <label for="cred-url-input">Service URL (Optional)</label>
+        <input type="text" id="cred-url-input" class="form-control" maxlength="500" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label for="cred-remarks-input">Remarks / Security Questions (Optional)</label>
+        <textarea id="cred-remarks-input" class="form-control" rows="3" maxlength="2000" placeholder="Additional secret details..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-cred">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-save-cred">Save Credential</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- MODAL: RAW CIPHERTEXT INSPECTION (Proof of Encryption at Rest) -->
+<!-- ===================================================================== -->
+<div class="modal-backdrop hidden" id="modal-raw" role="dialog" aria-modal="true" aria-labelledby="modal-raw-title">
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-raw-title">Raw Stored Ciphertext (DB Proof)</h3>
+      <button type="button" class="modal-close" id="btn-close-raw-modal" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">This data is retrieved directly from SQLite without decrypting. It demonstrates that sensitive information is stored exclusively as <code>base64(12-byte nonce || ciphertext || 16-byte GCM tag)</code>.</p>
+      <div class="code-block-wrapper">
+        <pre class="raw-code-block" id="raw-ciphertext-content">Loading raw ciphertext...</pre>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="btn-copy-raw">Copy Ciphertext</button>
+      <button type="button" class="btn btn-primary" id="btn-dismiss-raw">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- MODAL: DELETE CONFIRMATION -->
+<!-- ===================================================================== -->
+<div class="modal-backdrop hidden" id="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title">
+  <div class="modal-card modal-sm">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-confirm-title">Confirm Deletion</h3>
+      <button type="button" class="modal-close" id="btn-close-confirm-modal" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-modal-message">Are you sure you want to permanently delete this item?</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" id="btn-cancel-confirm">Cancel</button>
+      <button type="button" class="btn btn-danger" id="btn-execute-confirm">Delete Permanently</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

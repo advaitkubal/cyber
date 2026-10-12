@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} - {{ title }} - SecureVault{% endblock %}
+
+{% block content %}
+<div class="error-page-wrapper">
+  <div class="error-card">
+    <div class="error-code-badge">{{ code }}</div>
+    <h1 class="error-title">{{ title }}</h1>
+    <p class="error-message">{{ message }}</p>
+    <div class="error-actions">
+      <a href="{{ url_for('views.index') }}" class="btn btn-primary">Return to Safety</a>
+      {% if not session.get('user_id') %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Go to Login</a>
+      {% endif %}
+    </div>
+    <div class="security-callout">
+      <small>🔒 SecureVault error handling: Debug symbols and stack traces are suppressed in compliance with secure error handling principles.</small>
+    </div>
+  </div>
+</div>
+{% endblock %}
